@@ -585,6 +585,50 @@ configureNAT() {
   return 0
 }
 
+configureBridge() {
+
+  [[ "$DEBUG" == [Yy1]* ]] && echo "Configuring Bridge networking..."
+
+  # Check if we have the necessary permissions and modules
+  if [ ! -c /dev/net/tun ]; then
+    [ ! -d /dev/net ] && mkdir -m 755 /dev/net
+    if mknod /dev/net/tun c 10 200; then
+      chmod 666 /dev/net/tun
+    fi
+  fi
+
+  if [ ! -c /dev/net/tun ]; then
+    [[ "$PODMAN" == [Yy1]* ]] && return 1
+    warn "TUN device is missing. $ADD_ERR --device /dev/net/tun" && return 1
+  fi
+
+  # Check if bridge helper is available
+  if [ ! -x /usr/lib/qemu/qemu-bridge-helper ] && [ ! -x /usr/libexec/qemu-bridge-helper ]; then
+    warn "qemu-bridge-helper not found. Bridge networking requires QEMU bridge helper." && return 1
+  fi
+
+  # Ensure /etc/qemu/bridge.conf exists and allows our bridge
+  if [ ! -f /etc/qemu/bridge.conf ]; then
+    warn "Bridge configuration file (/etc/qemu/bridge.conf) not found." && return 1
+  fi
+
+  # Check if our bridge is allowed
+  if ! grep -q "^allow $VM_NET_DEV" /etc/qemu/bridge.conf; then
+    mkdir -p /etc/qemu
+    echo "allow $VM_NET_DEV" >> /etc/qemu/bridge.conf
+    # warn "Bridge $VM_NET_DEV not allowed in /etc/qemu/bridge.conf" && return 1
+  fi
+
+  # Create TAP device using QEMU bridge helper
+  # This will automatically connect the TAP device to the specified bridge
+  NET_OPTS="-netdev bridge,id=hostnet0,br=$VM_NET_DEV"
+
+  # Note: With bridge networking, the VM will get an IP from the LAN DHCP server
+  # or you can configure a static IP inside the VM
+  
+  return 0
+}
+
 closeBridge() {
 
   local pid="/var/run/dnsmasq.pid"
@@ -852,10 +896,20 @@ else
 
       fi ;;
 
+    "bridge" )
+    
+      # Configure bridge interface
+      if ! configureBridge; then
+        closeBridge
+        NETWORK="bridge"
+        msg="failed to setup Bridge networking, falling back to user-mode networking!"
+        warn "$msg"
+      fi ;;
+
   esac
 
   case "${NETWORK,,}" in
-    "tap" | "tun" | "tuntap" | "y" ) ;;
+    "tap" | "tun" | "tuntap" | "y" | "bridge" ) ;;
     "passt" | "user"* )
 
       # Configure for user-mode networking (passt)

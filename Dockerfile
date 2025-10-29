@@ -12,7 +12,7 @@ ARG DEBCONF_NOWARNINGS="yes"
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG DEBCONF_NONINTERACTIVE_SEEN="true"
 
-RUN set -eu && \
+RUN set -eu  && \
     apt-get update && \
     apt-get --no-install-recommends -y install \
         bc \
@@ -42,7 +42,8 @@ RUN set -eu && \
         inotify-tools \
         netcat-openbsd \
         ca-certificates \
-        qemu-system-x86 && \
+        qemu-system-x86 \
+        qemu-system-common && \
     wget "https://github.com/qemus/passt/releases/download/v${VERSION_PASST}/passt_${VERSION_PASST}_${TARGETARCH}.deb" -O /tmp/passt.deb -q && \
     dpkg -i /tmp/passt.deb && \
     apt-get clean && \

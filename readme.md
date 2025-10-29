@@ -347,6 +347,34 @@ kubectl apply -f https://raw.githubusercontent.com/qemus/qemu/refs/heads/master/
     - /dev/bus/usb
   ```
 
+### How do I use bridge networking mode?
+
+  Bridge networking allows the VM to connect directly to your physical network, obtaining an IP address from your router's DHCP server or using a static IP in the same subnet as your host machine.
+
+  To enable bridge networking mode, add the following lines to your compose file:
+
+  ```yaml
+  environment:
+    NETWORK: "bridge"
+    VM_NET_DEV: "br0"  # Specify your host bridge interface name
+  devices:
+    - /dev/net/tun
+  cap_add:
+    - NET_ADMIN
+  ```
+
+  You'll also need to ensure that `/etc/qemu/bridge.conf` exists in the container with the appropriate bridge configuration. The default container already includes:
+
+  ```
+  allow br0
+  ```
+
+  Inside the VM, you can then:
+  1. Use DHCP to automatically obtain an IP from your router
+  2. Configure a static IP in the same subnet as your host machine
+
+  Note: Bridge networking requires the container to have access to the host's network interface and appropriate permissions.
+
 ### How do I share files with the host?
 
   To share files with the host, first ensure that your guest OS has `9pfs` support compiled in or available as a kernel module. If so, add the following volume to your compose file:
@@ -379,6 +407,28 @@ kubectl apply -f https://raw.githubusercontent.com/qemus/qemu/refs/heads/master/
   environment:
     DEBUG: "Y"
   ```
+
+### How do I customize the ports used by the container?
+
+  When running multiple containers with host networking, you may encounter port conflicts. You can customize the ports used by the container with the following environment variables:
+
+  ```yaml
+  environment:
+    VNC_PORT: "5901"     # VNC server port (default: 5900)
+    WEB_PORT: "8007"     # Web interface port (default: 8006)
+    MON_PORT: "7101"     # QEMU monitor port (default: 7100)
+    WSD_PORT: "8005"     # WebSocket port (default: 8004)
+    WSS_PORT: "5701"     # WebSocket SSL port (default: 5700)
+  ```
+
+  Alternatively, you can enable automatic port adjustment to let the container find free ports:
+
+  ```yaml
+  environment:
+    AUTO_PORT_ADJUST: "Y"  # Automatically find free ports if defaults are in use
+  ```
+
+  When using automatic port adjustment, if a port is already in use, the container will automatically select the next available port and display a warning message indicating the port change.
 
 ## Stars 🌟
 [![Stars](https://starchart.cc/qemus/qemu.svg?variant=adaptive)](https://starchart.cc/qemus/qemu)
