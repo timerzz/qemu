@@ -3,7 +3,7 @@
 FROM debian:trixie-slim
 
 ARG TARGETARCH
-ARG VERSION_ARG="0.0"
+ARG VERSION_ARG="7.27"
 ARG VERSION_VNC="1.6.0"
 ARG VERSION_UTK="1.2.0"
 ARG VERSION_PASST="2025_09_19"
@@ -12,7 +12,9 @@ ARG DEBCONF_NOWARNINGS="yes"
 ARG DEBIAN_FRONTEND="noninteractive"
 ARG DEBCONF_NONINTERACTIVE_SEEN="true"
 
+
 RUN set -eu  && \
+    sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
     apt-get --no-install-recommends -y install \
         bc \
@@ -44,13 +46,13 @@ RUN set -eu  && \
         ca-certificates \
         qemu-system-x86 \
         qemu-system-common && \
-    wget "https://github.com/qemus/passt/releases/download/v${VERSION_PASST}/passt_${VERSION_PASST}_${TARGETARCH}.deb" -O /tmp/passt.deb -q && \
+    wget "https://xget.xi-xu.me/gh/qemus/passt/releases/download/v${VERSION_PASST}/passt_${VERSION_PASST}_${TARGETARCH}.deb" -O /tmp/passt.deb -q && \
     dpkg -i /tmp/passt.deb && \
     apt-get clean && \
     mkdir -p /etc/qemu && \
     echo "allow br0" > /etc/qemu/bridge.conf && \
     mkdir -p /usr/share/novnc && \
-    wget "https://github.com/novnc/noVNC/archive/refs/heads/master.tar.gz" -O /tmp/novnc.tar.gz -q --timeout=10 && \
+    wget "https://xget.xi-xu.me/gh/novnc/noVNC/archive/refs/heads/master.tar.gz" -O /tmp/novnc.tar.gz -q --timeout=10 && \
     tar -xf /tmp/novnc.tar.gz -C /tmp/ && \
     cd "/tmp/noVNC-master" && \
     mv app core vendor package.json ./*.html /usr/share/novnc && \
@@ -65,10 +67,10 @@ COPY --chmod=664 ./web/conf/defaults.json /usr/share/novnc
 COPY --chmod=664 ./web/conf/mandatory.json /usr/share/novnc
 COPY --chmod=744 ./web/conf/nginx.conf /etc/nginx/default.conf
 
-ADD --chmod=755 "https://github.com/qemus/fiano/releases/download/v${VERSION_UTK}/utk_${VERSION_UTK}_${TARGETARCH}.bin" /run/utk.bin
+ADD --chmod=755 "https://xget.xi-xu.me/gh/qemus/fiano/releases/download/v${VERSION_UTK}/utk_${VERSION_UTK}_${TARGETARCH}.bin" /run/utk.bin
 
 VOLUME /storage
-EXPOSE 22 5900 8006
+#EXPOSE 22 5900 8006
 
 ENV BOOT="alpine"
 ENV CPU_CORES="2"

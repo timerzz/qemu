@@ -15,3 +15,40 @@ services:
       - ./qemu:/storage
     restart: always
     stop_grace_period: 2m
+  qemu-bridge:
+    image: qemux/qemu
+    container_name: qemu-bridge
+    environment:
+      BOOT: "mint"
+      NETWORK: "bridge"
+      VM_NET_BRIDGE: "br0"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./qemu-bridge:/storage
+    restart: always
+    stop_grace_period: 2m
+    network_mode: "host"
+  qemu-custom-ports:
+    image: qemux/qemu
+    container_name: qemu-custom-ports
+    environment:
+      BOOT: "mint"
+      VNC_PORT: "5901"
+      WEB_PORT: "8007"
+      MON_PORT: "7101"
+      WSD_PORT: "8005"
+      WSS_PORT: "5701"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./qemu-custom-ports:/storage
+    restart: always
+    stop_grace_period: 2m
+    network_mode: "host"
